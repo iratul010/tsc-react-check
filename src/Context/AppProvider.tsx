@@ -1,100 +1,66 @@
-import React, { createContext, useEffect, useState } from "react";
+import { CircularProgress } from "@mui/material";
+import React, { useEffect, useContext, useReducer } from "react";
+import { ActionType } from "../State/ActionTypes";
+import { InitialState, initialState, mixerReducer } from "../State/Reducers/MixerReducer";
 
-interface AboutType {
-  name: string;
-  age: number;
+export interface ObjectData {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-interface AppValuesType {
-  about: AboutType;
+export interface AppValuesType {
+  state: InitialState;
 }
 
-export const MyContext = createContext<AppValuesType | null>(null);
+export const MyContext = React.createContext<AppValuesType | null>(null);
+interface AppProviderProps {
+  children: React.ReactNode;
+}
 
-const AppProvider = ({ children }: any) => {
-  const [data, setData] = useState<any>([]);
-  const [loading, setLoading] = useState(true);
+const AppProvider = ({ children }: AppProviderProps) => {
+  const [progress, setProgress] = React.useState(0);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setProgress((prevProgress) => (prevProgress >= 100 ? 0 : prevProgress + 10));
+    }, 800);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+  // const [data, setData] = useState<ObjectDT[]>([]);
+  const [state, dispatch] = useReducer(mixerReducer, initialState);
 
   useEffect(() => {
+    dispatch({ type: ActionType.FETCHING_REPOSITORIES });
+
     fetch("https://jsonplaceholder.typicode.com/todos")
       .then((res) => res.json())
       .then((data) => {
-        setData(data);
-        setLoading(false);
+        console.log(typeof data, data);
+        dispatch({ type: ActionType.FETCHING_REPOSITORIES_SUCCESS, payload: data });
       })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-        setLoading(false);
+      .catch(() => {
+        dispatch({ type: ActionType.FETCHING_REPOSITORIES_ERROR });
       });
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  if (state.loading) {
+    return <CircularProgress variant="determinate" value={progress} />;
   }
 
-  const about: AboutType = {
-    name: "ratul",
-    age: 23,
-  };
+  const appValues: AppValuesType = { state };
 
-  const appValues: AppValuesType = { about };
-  console.log(appValues);
   return <MyContext.Provider value={appValues}>{children}</MyContext.Provider>;
 };
+export function UseContext() {
+  const CONTEXT = useContext(MyContext);
+  return CONTEXT;
+}
 
 export default AppProvider;
-// import React, { createContext, useEffect, useState } from "react";
-
-// // interface AppContextProps {
-// //   data: string;
-// // }
-
-// // export const AppContext = createContext<AppContextProps | null>(null);
-// // interface MyContextData {
-// //   name: string;
-// //   age: number;
-// // }
-// // interface AppValuesType {}
-// export const MyContext: React.Context<any> = createContext(null);
-
-// const AppProvider = ({ children }: any) => {
-//   const [data, setData] = useState<any>([]);
-//   const [loading, setLoading] = useState(true);
-//   console.log("object");
-//   useEffect(() => {
-//     fetch("https://jsonplaceholder.typicode.com/todos")
-//       .then((res) => res.json())
-//       .then((data) => {
-//         // console.log(data);
-//         setData(data);
-//         setLoading(false);
-//       })
-//       .catch((error) => {
-//         console.error("Error fetching data:", error);
-//         setLoading(false);
-//       });
-//   }, []);
-//   if (loading) {
-//     return <div>Loading...</div>;
-//   }
-
-//   interface AboutType {
-//     name: string;
-//     age: number;
-//   }
-
-//   interface AppValuesType {
-//     about: AboutType;
-//   }
-
-//   const about: AboutType = {
-//     name: "ratul",
-//     age: 23,
-//   };
-
-//   const appValues: any = { about };
-
-//   return <MyContext.Provider value={appValues}>{children}</MyContext.Provider>;
-// };
-
-// export default AppProvider;
